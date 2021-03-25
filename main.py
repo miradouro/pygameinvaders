@@ -32,12 +32,38 @@ BG = pygame.transform.scale(pygame.image.load(os.path.join("assets", "background
 
 # Funções
 
+class Ship:
+    def __init__(self, x, y, health=1000):
+        self.x = x
+        self.y = y
+        self.health = health
+        self.ship_img = None
+        self.laser_img = None
+        self.lasers = []
+        self.cool_down_counter = 0
+
+    def draw(self, window):
+        window.blit(self.ship_img, (self.x, self.y))
+
+
+class Player(Ship):
+    def __init__(self, x, y, health=100):
+        super().__init__(x, y, health)
+        self.ship_img = YELLOW_SPACE_SHIP
+        self.laser_img = YELLOW_LASER
+        self.mask = pygame.mask.from_surface(self.ship_img)
+        self.max_health = health
+
 
 def main():
     run = True
     FPS = 60
     level = 1
     lives = 5
+
+    player_vel = 5
+    player = Player(300, 650)
+
     clock = pygame.time.Clock()
 
     def redraw_window():
@@ -47,6 +73,8 @@ def main():
 
         WIN.blit(lives_label, (10, 10))
         WIN.blit(level_label, (WIDTH - level_label.get_width() - 10, 10))
+
+        player.draw(WIN)
 
         pygame.display.update()
 
@@ -58,6 +86,15 @@ def main():
             if event.type == pygame.QUIT:
                 run = False
 
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_a] and player.x > 0:  # Left
+            player.x -= player_vel
+        if keys[pygame.K_d] and player.x < WIDTH - 100:  # Right
+            player.x += player_vel
+        if keys[pygame.K_w] and player.y > 0:  # Up
+            player.y -= player_vel
+        if keys[pygame.K_s] and player.y < HEIGHT - 100:  # Down
+            player.y += player_vel
 
 main()
 
