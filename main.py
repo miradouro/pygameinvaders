@@ -2,10 +2,12 @@ import pygame
 import os
 import time
 import random
+
 # Iniciando as fontes
 pygame.font.init()
 main_font = pygame.font.SysFont("comicsans", 50)
 lost_font = pygame.font.SysFont("comicsans", 80)
+title_font = pygame.font.SysFont("comicsans", 70)
 
 # Definindo tamanho da tela e colocando
 WIDTH, HEIGHT = 750, 750
@@ -109,14 +111,23 @@ class Player(Ship):
     def move_lasers(self, vel, objs):
         self.cooldown()
         for laser in self.lasers:
-            laser.move(vel)
+            laser.move(vel-5)
             if laser.off_screen(HEIGHT):
                 self.lasers.remove(laser)
             else:
                 for obj in objs:
                     if laser.collision(obj):
                         objs.remove(obj)
-                        self.lasers.remove(laser)
+                        if laser in self.lasers:
+                            self.lasers.remove(laser)
+
+    def draw(self, window):
+        super().draw(window)
+        self.healthbar(window)
+
+    def healthbar(self, window):
+        pygame.draw.rect(window, (255, 0, 0), (self.x, self.y + self.ship_img.get_height() + 10, self.ship_img.get_width(), 10))
+        pygame.draw.rect(window, (0, 255, 0), (self.x, self.y + self.ship_img.get_height() + 10, self.ship_img.get_width() * (self.health/self.max_health), 10))
 
 
 class Enemy(Ship):
@@ -133,6 +144,12 @@ class Enemy(Ship):
 
     def move(self, vel):
         self.y += vel
+
+    def shoot(self):
+        if self.cool_down_counter == 0:
+            laser = Laser(self.x-20, self.y, self.laser_img)
+            self.lasers.append(laser)
+            self.cool_down_counter = 1
 
 
 def collide(obj1, obj2):
@@ -154,7 +171,7 @@ def main():
     player_vel = 5
     laser_vel = 4
 
-    player = Player(300, 650)
+    player = Player(300, 630)
 
     clock = pygame.time.Clock()
 
@@ -205,16 +222,16 @@ def main():
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                run = False
+                quit()
 
         keys = pygame.key.get_pressed()
-        if keys[pygame.K_a] and player.x > 0:  # Left
+        if keys[pygame.K_a] and player.x > 0 or keys[pygame.K_LEFT] and player.x > 0:  # Left
             player.x -= player_vel
-        if keys[pygame.K_d] and player.x < WIDTH - player.get_width():  # Right
+        if keys[pygame.K_d] and player.x < WIDTH - player.get_width() or keys[pygame.K_RIGHT] and player.x < WIDTH - player.get_width():  # Right
             player.x += player_vel
-        if keys[pygame.K_w] and player.y > 0:  # Up
+        if keys[pygame.K_w] and player.y > 0 or keys[pygame.K_UP] and player.y > 0:  # Up
             player.y -= player_vel
-        if keys[pygame.K_s] and player.y < HEIGHT - player.get_height():  # Down
+        if keys[pygame.K_s] and player.y < HEIGHT - player.get_height() - 20 or keys[pygame.K_DOWN] and player.y < HEIGHT - player.get_height() - 20:  # Down
             player.y += player_vel
 
         if keys[pygame.K_SPACE]:
@@ -223,12 +240,35 @@ def main():
         for enemy in enemies[:]:
             enemy.move(enemy_vel)
             enemy.move_lasers(laser_vel, player)
-            if enemy.y + enemy.get_height() > HEIGHT:
+
+            if random.randrange(0, 2*60) == 1:
+                enemy.shoot()
+
+            if collide(enemy, player):
+                player.health -=10
+                enemies.remove(enemy)
+            elif enemy.y + enemy.get_height() > HEIGHT:
                 lives -= 1
                 enemies.remove(enemy)
 
         player.move_lasers(-laser_vel, enemies)
 
 
-main()
+def main_menu():
+    run = True
+    while run:
+        WIN.blit(BG, (0, 0))
+        title_label = title_font.render("Press the mouse to begin...", 1, (255, 255, 255))
+        WIN.blit(title_label, (WIDTH/2 - title_label.get_width()/2, 350))
+        pygame.display.update()
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                run = False
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                main()
+
+    pygame.quit()
+
+
+main_menu()
 
